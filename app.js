@@ -7,147 +7,146 @@ var messageDisplay = document.querySelector("#message");
 var h1 = document.querySelector("h1");
 var resetButton = document.querySelector("#reset");
 var modeButtons = document.querySelectorAll(".mode");
-var score = 0; 
-var scoreDisplay = document.querySelector("#scoreDisplay"); 
-var resetPressed = true; 
+var score = 0;
+var scoreDisplay = document.querySelector("#scoreDisplay");
+var resetPressed = true;
 
 
 init();
+//this is the initiate fucntion, it starts the program
+function init() {
+    setupModeButtons();
+    setupSquares();
+    var ssScore = sessionStorage.getItem('score');
+    if (ssScore !== null) {
+        score = ssScore;
+        scoreDisplay.textContent = score;
+    } else {
+        sessionStorage.setItem('score', score);
+    }
+    reset();
+}
+//this is the setupModeButtons fuction, this allows you to select a difficulty and which each difficulty it allows a preset number ///of boxes to be arranged for the player
+function setupModeButtons() {
+    for (var i = 0; i < modeButtons.length; i++) {
+        modeButtons[i].addEventListener("click", function() {
+            modeButtons[0].classList.remove("selected");
+            modeButtons[1].classList.remove("selected");
+            this.classList.add("selected");
+            this.textContent === "Easy" ? numSquares = 3 : numSquares = 6;
+            reset();
+        });
+    }
+}
+//this is the setupSquares function, this is the portion of the program that lets the player know if the option they selected is correct or incorrect. if = "Correct"; then the option "Play Again?" is printed and 5 points are added to the score; else  minus 1 point from total score, the incorrect box is turned to the background color and the message "Try Again" is printed until the  correct box is clicked.
+function setupSquares() {
+    for (var i = 0; i < squares.length; i++) {
+        //add click listeners to squares
+        squares[i].addEventListener("click", function() {
+            //grab color of clicked square
+            var clickedColor = this.style.background;
+            //compare color to pickedColor
+            if (clickedColor === pickedColor) {
+                updateColorName();
+                //console.log(colorName);
+                messageDisplay.textContent = "Correct!";
+                resetButton.textContent = "Play Again?"
+                changeColors(clickedColor);
 
-function init(){
-	setupModeButtons();
-	setupSquares();
-	var lsScore = localStorage.getItem('score');
-	if( lsScore !== null ){
-		score = lsScore; 
-		scoreDisplay.textContent = score;
-	}
-	else {
-		localStorage.setItem('score', score); 
-	}
-	reset();
+                h1.style.background = clickedColor;
+                if (resetPressed) {
+                    score += 5;
+                    resetPressed = false;
+                }
+                scoreDisplay.textContent = score;
+                sessionStorage.setItem('score', score);
+            } else {
+                this.style.background = "#232323";
+                messageDisplay.textContent = "Try Again"
+                score--;
+                scoreDisplay.textContent = score;
+                sessionStorage.setItem('score', score);
+            }
+        });
+    }
 }
 
-function setupModeButtons(){
-	for(var i = 0; i < modeButtons.length; i++){
-		modeButtons[i].addEventListener("click", function(){
-			modeButtons[0].classList.remove("selected");
-			modeButtons[1].classList.remove("selected");
-			this.classList.add("selected");
-			this.textContent === "Easy" ? numSquares = 3: numSquares = 6;
-			reset();
-		});
-	}
+//async function updateColorName is the portion of the program where the app GETs a request to the API to match the winning colors  RGB color code to either an exact match name of color if the color is not exact then the program is to add "-ish" at the end of the closely related color.
+async function updateColorName() {
+    const regex = /\([^\)]+\)/g;
+    var rgbColors = pickedColor.match(regex);
+    const url = "https://www.thecolorapi.com/id?rgb=" + rgbColors[0];
+    var requestOptions = {
+        method: 'GET',
+        redirect: 'follow'
+    };
+
+    let result = await fetch(url, requestOptions);
+    let colorData = await result.json();
+
+    if (colorData.name.exact_match_name) {
+        colorDisplay.textContent = colorData.name.value;
+    } else {
+        colorDisplay.textContent = colorData.name.value + "-ish";
+    }
+}
+//function reset this is the portion of the program that allows you to reset the game. If the clickedColor matches the pickedColor then as messaged is displayed for the player "Play Again" with Correct next to it. Prior to the any color other than the pickedColor being selected, the message "New Colors" is printed as the default reset option.
+function reset() {
+    resetPressed = true;
+    colors = generateRandomColors(numSquares);
+    //pick a new random color from array
+    pickedColor = pickColor();
+    //change colorDisplay to match picked Color
+    colorDisplay.textContent = pickedColor;
+    resetButton.textContent = "New Colors"
+    messageDisplay.textContent = "";
+    //change colors of squares
+    for (var i = 0; i < squares.length; i++) {
+        if (colors[i]) {
+            squares[i].style.display = "block"
+            squares[i].style.background = colors[i];
+        } else {
+            squares[i].style.display = "none";
+        }
+    }
+    h1.style.background = "steelblue";
 }
 
-function setupSquares(){
-	for(var i = 0; i < squares.length; i++){
-	//add click listeners to squares
-		squares[i].addEventListener("click", function(){
-			//grab color of clicked square
-			var clickedColor = this.style.background;
-			//compare color to pickedColor
-			if(clickedColor === pickedColor){ 
-				updateColorName();
-				//console.log(colorName);
-				messageDisplay.textContent = "Correct!";
-				resetButton.textContent = "Play Again?"
-				changeColors(clickedColor);
-				h1.style.background = clickedColor;
-				if(resetPressed){
-					score+=5; 
-					resetPressed = false;
-				}
-				scoreDisplay.textContent = score;
-				localStorage.setItem('score', score);
-			} else {
-				this.style.background = "#232323";
-				messageDisplay.textContent = "Try Again"
-				score--;
-				scoreDisplay.textContent = score; 
-				localStorage.setItem('score', score);
-			}
-		});
-	}
-}
-
-
-async function updateColorName(){
-	const regex = /\([^\)]+\)/g; 
-	var rgbColors = pickedColor.match(regex); 
-	const url = "https://www.thecolorapi.com/id?rgb="+rgbColors[0];
-	var requestOptions = {
-	  method: 'GET',
-	  redirect: 'follow'
-	};
-
-	let result = await fetch(url, requestOptions); 
-	let colorData = await result.json(); 
-
-	if(colorData.name.exact_match_name) {
-		colorDisplay.textContent = colorData.name.value; 
-	}
-	else {
-		colorDisplay.textContent = colorData.name.value + "-ish"; 
-	}
-}
-
-function reset(){
-	resetPressed = true;
-	colors = generateRandomColors(numSquares);
-	//pick a new random color from array
-	pickedColor = pickColor();
-	//change colorDisplay to match picked Color
-	colorDisplay.textContent = pickedColor;
-	resetButton.textContent = "New Colors"
-	messageDisplay.textContent = "";
-	//change colors of squares
-	for(var i = 0; i < squares.length; i++){
-		if(colors[i]){
-			squares[i].style.display = "block"
-			squares[i].style.background = colors[i];
-		} else {
-			squares[i].style.display = "none";
-		}
-	}
-	h1.style.background = "steelblue";
-}
-
-resetButton.addEventListener("click", function(){
-	reset();
+resetButton.addEventListener("click", function() {
+    reset();
 })
 
-function changeColors(color){
-	//loop through all squares
-	for(var i = 0; i < squares.length; i++){
-		//change each color to match given color
-		squares[i].style.background = color;
-	}
+function changeColors(color) {
+    //loop through all squares
+    for (var i = 0; i < squares.length; i++) {
+        //change each color to match given color
+        squares[i].style.background = color;
+    }
+}
+//The next 3 functions are going to use Math.floor(Math.random()) to be able to pick a random RGB color by picking a random number 0-255 3 seperate times. The first function gives us the var random, the second gives us a randomColor that is placed into the format of an array, the last one gives us the exact numbers that formed our randomColor. 
+function pickColor() {
+    var random = Math.floor(Math.random() * colors.length);
+    return colors[random];
 }
 
-function pickColor(){
-	var random = Math.floor(Math.random() * colors.length);
-	return colors[random];
+function generateRandomColors(num) {
+    //make an array
+    var arr = []
+        //repeat num times
+    for (var i = 0; i < num; i++) {
+        //get random color and push into arr
+        arr.push(randomColor())
+    }
+    //return that array
+    return arr;
 }
 
-function generateRandomColors(num){
-	//make an array
-	var arr = []
-	//repeat num times
-	for(var i = 0; i < num; i++){
-		//get random color and push into arr
-		arr.push(randomColor())
-	}
-	//return that array
-	return arr;
-}
-
-function randomColor(){
-	//pick a "red" from 0 - 255
-	var r = Math.floor(Math.random() * 256);
-	//pick a "green" from  0 -255
-	var g = Math.floor(Math.random() * 256);
-	//pick a "blue" from  0 -255
-	var b = Math.floor(Math.random() * 256);
-	return "rgb(" + r + ", " + g + ", " + b + ")";
+function randomColor() {
+    //pick a "red" from 0 - 255
+    var r = Math.floor(Math.random() * 256);
+    //pick a "green" from  0 -255
+    var g = Math.floor(Math.random() * 256);
+    //pick a "blue" from  0 -255
+    var b = Math.floor(Math.random() * 256);
+    return "rgb(" + r + ", " + g + ", " + b + ")";
 }
