@@ -19,7 +19,7 @@ function init() {
     setupSquares();
     var ssScore = sessionStorage.getItem('score');
     if (ssScore !== null) {
-        score = ssScore;
+        score = Number(ssScore);
         scoreDisplay.textContent = score;
     } else {
         sessionStorage.setItem('score', score);
